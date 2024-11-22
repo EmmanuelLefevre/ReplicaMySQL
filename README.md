@@ -26,7 +26,7 @@ Ce projet configure un environnement Docker multi-conteneurs pour déployer une 
 ## CREATION DES FICHIERS DE CONFIGURATION MYSQL
 ### Master
 Créer un fichier **master.cnf** dans un dossier **configs**
-```conf
+```ini
 [mysqld]
 # Must be different from the slave server.
 server-id=1
@@ -46,7 +46,7 @@ default-authentication-plugin=caching_sha2_password
 ```
 ### Slave
 Créer un fichier **slave.cnf** dans un dossier **configs**
-```conf
+```ini
 [mysqld]
 # Must be different from the master server.
 server-id=2
