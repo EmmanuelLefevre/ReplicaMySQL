@@ -312,11 +312,11 @@ docker ps
 ```shell
 docker-compose build --no-cache
 ```
-⚠️ Penser à supprimer l'image en dangling!  
-Cette image est une couche intermédiaire lors de la construction de l'image Ubuntu contenant MySQL. Elle n'est plus nécessaire une fois l'image finale construite..
+⚠️ Penser à supprimer l'image en dangling!
 ```shell
 docker rmi $(docker images -f "dangling=true" -q)
 ```
+Cette image est une couche intermédiaire lors de la construction de l'image Ubuntu contenant MySQL. Elle n'est plus nécessaire une fois l'image finale construite..
 
 ## COPIER FICHIER SQL DANS LE CONTAINER MASTER
 Powershell
