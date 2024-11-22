@@ -1,0 +1,60 @@
+version: '3.8'
+
+networks:
+  mysql_network:
+    driver: bridge
+
+services:
+  master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROLE: master
+    image: ubuntu_mysql8.0_replica:22.04
+    container_name: mysql_master
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: test
+      MYSQL_USER: replica_master
+      MYSQL_PASSWORD: replica_master_password
+    ports:
+      - "3307:3306"
+    networks:
+      - mysql_network
+    volumes:
+      - ./master_data:/var/lib/mysql
+      - ./scripts/fixture.sql:/scripts/fixture.sql
+      - ./scripts/docker-entrypoint.sh:/scripts/docker-entrypoint.sh
+    entrypoint: ["/bin/bash", "/scripts/docker-entrypoint.sh"]
+    command: ["mysqld", "--user=mysql"]
+
+  slave:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROLE: slave
+    image: ubuntu_mysql8.0_replica:22.04
+    container_name: mysql_slave
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: test
+      MYSQL_USER: replica_slave
+      MYSQL_PASSWORD: replica_slave_password
+    entrypoint:
+      - /usr/local/bin/wait_for_mysql.sh
+      - "mysql_master"
+    depends_on:
+      - master
+    ports:
+      - "3308:3306"
+    networks:
+      - mysql_network
+    volumes:
+      - ./slave_data:/var/lib/mysql
+    command: ["mysqld", "--user=mysql"]
+
+volumes:
+  master_data:
+  slave_data:
