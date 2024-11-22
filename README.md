@@ -3,6 +3,8 @@
 ## SOMMAIRE
 - [INTRODUCTION](#introduction)
 - [CREATION DES FICHIERS DE CONFIGURATION MYSQL](#creation-des-fichiers-de-configuration-mysql)
+  - [Master](#master)
+  - [Slave](#slave)
 - [SCRIPT SQL](#script-sql)
 - [CREATION DE L'IMAGE](#creation-de-limage)
 - [CREATION DES CONTAINERS](#creation-des-containers)
@@ -19,7 +21,8 @@
 Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0 sur Ubuntu 22.04, avec des scripts personnalisés et des fichiers de configuration spécifiques.
 
 ## CREATION DES FICHIERS DE CONFIGURATION MYSQL
-1. Créer un fichier **master.cnf** dans un dossier **configs**
+### Master
+Créer un fichier **master.cnf** dans un dossier **configs**
 ```conf
 [mysqld]
 # Must be different from the slave server.
@@ -38,7 +41,8 @@ binlog-do-db=test
 # Set authentication plugin
 default-authentication-plugin=caching_sha2_password
 ```
-2. Créer un fichier **slave.cnf** dans un dossier **configs**
+### Slave
+Créer un fichier **slave.cnf** dans un dossier **configs**
 ```conf
 [mysqld]
 # Must be different from the master server.
@@ -108,7 +112,7 @@ VALUES
 ```
 
 ## CREATION DE L'IMAGE
-### Créez un fichier Dockerfile
+### Créer un fichier Dockerfile
 ```dockerfile
 # Use official UBUNTU 22.04 image as a base
 FROM ubuntu:22.04
@@ -179,7 +183,7 @@ CMD echo "MySQL version:" && mysqld --version && tail -f /dev/null
 ```
 
 ## CREATION DES CONTAINERS
-### Créez un fichier docker-compose.yml
+### Créer un fichier docker-compose.yml
 ```yml
 version: '3.8'
 
