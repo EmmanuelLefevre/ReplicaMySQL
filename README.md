@@ -270,3 +270,7 @@ docker builder prune --all --force
 Remove-Item -Recurse -Force .\master_data, .\slave_data
 Remove-Item .\sauvegarde.sql
 ```
+
+***
+
+⭐⭐⭐ I hope you enjoy it, if so don't hesitate to leave a like on this repository and on the "Settings" one (click on the "Star" button at the top right of the repository page). Thanks 🤗
