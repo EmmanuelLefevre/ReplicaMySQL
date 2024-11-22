@@ -11,6 +11,9 @@
   - [wait_for_mysql.sh](#wait_for_mysqlsh)
 - [CREATION DE L'IMAGE](#creation-de-limage)
 - [CREATION DES CONTAINERS](#creation-des-containers)
+- [CONSTRUCTION](#construction)
+  - [Construire l'environnement](#construire-lenvironnement)
+  - [Construire l'image](#construire-limage)
 - [COPIER FICHIER SQL DANS LE CONTAINER MASTER](#copier-fichier-sql-dans-le-container-master)
 - [CONFIGURER REPLICATION MASTER / SLAVE](#configurer-replication-masterslave)
 - [CREER SAUVEGARDE SUR LE CONTAINER SLAVE](#creer-sauvegarde-sur-le-container-slave)
@@ -25,7 +28,7 @@ Ce projet configure un environnement Docker multi-conteneurs pour déployer une 
 
 ## CREATION DES FICHIERS DE CONFIGURATION MYSQL
 ### Master
-Créer un fichier **master.cnf** dans un dossier **configs**
+Créer un fichier **master.cnf** dans un dossier **configs**.
 ```ini
 [mysqld]
 # Must be different from the slave server.
@@ -45,7 +48,7 @@ binlog-do-db=test
 default-authentication-plugin=caching_sha2_password
 ```
 ### Slave
-Créer un fichier **slave.cnf** dans un dossier **configs**
+Créer un fichier **slave.cnf** dans un dossier **configs**.
 ```ini
 [mysqld]
 # Must be different from the master server.
@@ -161,7 +164,7 @@ exec "$@"
 ```
 
 ## CREATION DE L'IMAGE
-### Créer un fichier Dockerfile
+Créer un fichier **Dockerfile**.
 ```dockerfile
 # Use official UBUNTU 22.04 image as a base
 FROM ubuntu:22.04
@@ -232,7 +235,7 @@ CMD echo "MySQL version:" && mysqld --version && tail -f /dev/null
 ```
 
 ## CREATION DES CONTAINERS
-### Créer un fichier docker-compose.yml
+Créer un fichier **docker-compose.yml**.
 ```yml
 version: '3.8'
 
@@ -295,19 +298,24 @@ volumes:
   master_data:
   slave_data:
 ```
-### Créez l'image
 
-### Construire l'image
-```shell
-docker-compose build --no-cache
-```
-### Lancer les containers dans Docker desktop
+## CONSTRUCTION
+### Construire l'environnement
 ```shell
 docker-compose up -d
 ```
-### Vérification
 ```shell
 docker ps
+```
+### Construire l'image
+💡 Construit seulement l'image mais pas les containers!
+```shell
+docker-compose build --no-cache
+```
+⚠️ Penser à supprimer l'image en dangling!  
+Cette image est une couche intermédiaire lors de la construction de l'image Ubuntu contenant MySQL. Elle n'est plus nécessaire une fois l'image finale construite..
+```shell
+docker rmi $(docker images -f "dangling=true" -q)
 ```
 
 ## COPIER FICHIER SQL DANS LE CONTAINER MASTER
@@ -437,10 +445,6 @@ SELECT * FROM test;
 EXIT;
 ```
 
-## SUPPRESSION IMAGE EN STATUT DANGLING
-```shell
-docker rmi $(docker images -f "dangling=true" -q)
-```
 ## LOGS CONTAINER
 ```shell
 docker logs mysql_master
