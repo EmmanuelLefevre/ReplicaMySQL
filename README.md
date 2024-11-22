@@ -2,8 +2,10 @@
 
 ## SOMMAIRE
 - [INTRODUCTION](#introduction)
-- [CREATION  DES CONTAINERS](#creation-des-containers)
+- [CREATION DES FICHIERS DE CONFIGURATION MYSQL](#creation-des-fichiers-de-configuration-mysql)
 - [SCRIPT SQL](#script-sql)
+- [CREATION DE L'IMAGE](#creation-de-limage)
+- [CREATION DES CONTAINERS](#creation-des-containers)
 - [COPIER FICHIER SQL DANS LE CONTAINER MASTER](#copier-fichier-sql-dans-le-container-master)
 - [CONFIGURER REPLICATION MASTER / SLAVE](#configurer-replication-masterslave)
 - [CREER SAUVEGARDE SUR LE CONTAINER SLAVE](#creer-sauvegarde-sur-le-container-slave)
@@ -16,7 +18,166 @@
 ## INTRODUCTION
 Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0 sur Ubuntu 22.04, avec des scripts personnalisés et des fichiers de configuration spécifiques.
 
-## CREATION  DES CONTAINERS
+## CREATION DES FICHIERS DE CONFIGURATION MYSQL
+### Créer un fichier **master.cnf** dans un dossier **configs**
+```conf
+[mysqld]
+# Must be different from the slave server.
+server-id=1
+
+# Binary log to record changes made to databases.
+log-bin=master_bin
+# Sets number days before binlog files will automatically deleted.
+binlog_expire_logs_days=99
+# Set maximum size of binlog files before new file will created.
+max_binlog_size=100M
+
+# Specify the databases whose events should be included in the binary transaction log file.
+binlog-do-db=test
+
+# Set authentication plugin
+default-authentication-plugin=caching_sha2_password
+```
+###  Créer un fichier **slave.cnf** dans un dossier **configs**
+```conf
+[mysqld]
+# Must be different from the master server.
+server-id=2
+
+# Binary log to record databases changes.
+log-bin=slave_bin
+# Sets number days before binlog files will automatically deleted.
+binlog_expire_logs_days=99
+# Set maximum size of binlog files before new file will created.
+max_binlog_size=100M
+
+# Specify databases whose events should be included in binary transaction log file.
+binlog-do-db=test
+
+# Specify file name in which slave server will store events received from master server.
+relay-log=slave_relay_bin
+
+# By default, changes applied by slave server aren't recorded in its own binary log (binlog).
+# This could a problem if slave server also has to serve as a master server for other slaves.
+log_replica_updates=1
+
+# Prohibit data modification requests.
+# Slave server musn't modify its own data, but only read it and apply changes received from master server.
+read-only=1
+
+# Set authentication plugin
+default-authentication-plugin=caching_sha2_password
+
+
+########## Parameters for master server connection ##########
+# Set address or hostname of master server.
+master-host=mysql_master
+
+# Set created replica username to connect master server.
+master-user=user_replica
+
+# Set created replica user password to connect master server.
+master-password=user_replica_password
+
+# Set port on which master server listens for replication connections.
+master-port=3306
+
+# Limit replication to the specified database.
+replicate-do-db=test
+```
+
+## SCRIPT SQL
+```sql
+SET NAMES 'utf8';
+SET CHARACTER SET utf8;
+SET SESSION collation_connection = 'utf8_general_ci';
+
+CREATE TABLE IF NOT EXISTS test (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    prenom VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO test (nom, prenom)
+VALUES
+('Lefevre', 'Emmanuel'),
+('Adulyadej', 'Bhumibol'),
+('Poutine', 'Vladimir'),
+('Zelensky', 'Volodymyr');
+```
+
+## CREATION DE L'IMAGE
+### Créez un fichier Dockerfile
+```dockerfile
+# Use official UBUNTU 22.04 image as a base
+FROM ubuntu:22.04
+
+# Set environment variable to avoid debconf errors
+ENV DEBIAN_FRONTEND=noninteractive
+
+#####==========Install dependencies and MySQL 8.0==========#####
+RUN apt-get update && apt-get install -y \
+  wget \
+  lsb-release \
+  gnupg \
+  net-tools \
+  passwd \
+  && wget https://dev.mysql.com/get/mysql-apt-config_0.8.17-1_all.deb \
+  && echo "mysql-apt-config mysql-apt-config/select-server select mysql-8.0" | debconf-set-selections \
+  && dpkg -i mysql-apt-config_0.8.17-1_all.deb \
+  && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C \
+  && apt-get update && apt-get install -y mysql-server=8.0.* \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Check mysql installed version
+RUN mysqld --version
+
+
+#####==========Create mysql user and group==========#####
+# Create a mysql user and group (non-root) to run mysql securely
+RUN groupadd -r mysql || true \
+  && useradd -r -g mysql -m -d /var/lib/mysql mysql || true
+
+
+#####==========Set build argument and environment variable for configuration file==========#####
+ARG ROLE
+ENV ROLE=${ROLE}
+
+
+#####==========Copy custom configuration files==========#####
+# Copy configuration file depending on ROLE value
+COPY ./configs/${ROLE}.cnf /etc/mysql/conf.d/${ROLE}.cnf
+
+# Copy other necessary scripts
+COPY ./scripts/fixture.sql /scripts/fixture.sql
+COPY ./scripts/docker-entrypoint.sh /scripts/docker-entrypoint.sh
+
+
+#####==========Give necessary permissions to scripts and render them executable==========#####
+RUN chmod 644 /etc/mysql/conf.d/${ROLE}.cnf
+RUN chmod +x /scripts/docker-entrypoint.sh
+RUN chown -R mysql:mysql /var/lib/mysql
+
+
+#####==========wait_for_mysql.sh==========#####
+# Copy script into containers
+COPY ./scripts/wait_for_mysql.sh /usr/local/bin/wait_for_mysql.sh
+# Check if file is nicely copied
+RUN ls -l /usr/local/bin/wait_for_mysql.sh
+# Give necessary permissions to script and render it executable
+RUN chmod +x /usr/local/bin/wait_for_mysql.sh
+
+
+#####==========Set default command to start mysql server==========#####
+# Use non-root mysql user to run the server
+USER mysql
+
+# Display MySQL version on container start and keep container running
+CMD echo "MySQL version:" && mysqld --version && tail -f /dev/null
+```
+
+## CREATION DES CONTAINERS
 ### Créez un fichier docker-compose.yml
 ```yml
 version: '3.8'
@@ -80,6 +241,8 @@ volumes:
   master_data:
   slave_data:
 ```
+### Créez l'image
+
 ### Construire l'image
 ```shell
 docker-compose build --no-cache
@@ -91,26 +254,6 @@ docker-compose up -d
 ### Vérification
 ```shell
 docker ps
-```
-
-## SCRIPT SQL
-```sql
-SET NAMES 'utf8';
-SET CHARACTER SET utf8;
-SET SESSION collation_connection = 'utf8_general_ci';
-
-CREATE TABLE IF NOT EXISTS test (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nom VARCHAR(255) NOT NULL,
-    prenom VARCHAR(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-INSERT INTO test (nom, prenom)
-VALUES
-('Lefevre', 'Emmanuel'),
-('Adulyadej', 'Bhumibol'),
-('Poutine', 'Vladimir'),
-('Zelensky', 'Volodymyr');
 ```
 
 ## COPIER FICHIER SQL DANS LE CONTAINER MASTER
