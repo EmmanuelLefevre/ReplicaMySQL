@@ -87,6 +87,7 @@ replicate-do-db=test
 ```
 
 ## SCRIPT SQL
+Créer un fichier **fixture.sql** dans un dossier **scripts**
 ```sql
 SET NAMES 'utf8';
 SET CHARACTER SET utf8;
