@@ -1,4 +1,5 @@
 #!/bin/bash
+
 ########## Check script to ensure MySQL is ready before starting replication on slave host ##########
 
 # host name (container mysql_master) is passed as an argument
