@@ -21,47 +21,64 @@ Ce projet configure un environnement Docker multi-conteneurs pour déployer une 
 ```yml
 version: '3.8'
 
+networks:
+  mysql_network:
+    driver: bridge
+
 services:
   master:
-    image: mysql:8.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROLE: master
+    image: ubuntu_mysql8.0_replica:22.04
     container_name: mysql_master
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: test
+      MYSQL_USER: replica_master
+      MYSQL_PASSWORD: replica_master_password
     ports:
       - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: test
-      MYSQL_USER: replicator
-      MYSQL_PASSWORD: replicator_password
+    networks:
+      - mysql_network
     volumes:
       - ./master_data:/var/lib/mysql
-    command: >
-      --server-id=1
-      --log-bin=mysql-bin
-      --binlog-format=ROW
-      --authentication_policy=caching_sha2_password
+      - ./scripts/fixture.sql:/scripts/fixture.sql
+      - ./scripts/docker-entrypoint.sh:/scripts/docker-entrypoint.sh
+    entrypoint: ["/bin/bash", "/scripts/docker-entrypoint.sh"]
+    command: ["mysqld", "--user=mysql"]
 
   slave:
-    image: mysql:8.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROLE: slave
+    image: ubuntu_mysql8.0_replica:22.04
     container_name: mysql_slave
-    ports:
-      - "3308:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: test
-      MYSQL_USER: replicator
-      MYSQL_PASSWORD: replicator_password
+      MYSQL_USER: replica_slave
+      MYSQL_PASSWORD: replica_slave_password
+    entrypoint:
+      - /usr/local/bin/wait_for_mysql.sh
+      - "mysql_master"
+    depends_on:
+      - master
+    ports:
+      - "3308:3306"
+    networks:
+      - mysql_network
     volumes:
       - ./slave_data:/var/lib/mysql
-    command: >
-      --server-id=2
-      --relay-log=relay-log
-      --read-only=1
-      --authentication_policy=caching_sha2_password
-      --master-host=mysql_master
-      --master-user=replicator
-      --master-password=replicator_password
-      --master-port=3306
-      --replicate-do-db=test
+    command: ["mysqld", "--user=mysql"]
+
+volumes:
+  master_data:
+  slave_data:
 ```
 ### Construire l'image
 ```shell
