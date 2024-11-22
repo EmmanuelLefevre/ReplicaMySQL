@@ -5,7 +5,10 @@
 - [CREATION DES FICHIERS DE CONFIGURATION MYSQL](#creation-des-fichiers-de-configuration-mysql)
   - [Master](#master)
   - [Slave](#slave)
-- [SCRIPT SQL](#script-sql)
+- [SCRIPTS](#scripts)
+  - [SQL](#sql)
+  - [docker-entrypoint.sh](#docker-entrypointsh)
+  - [wait_for_mysql.sh](#wait_for_mysqlsh)
 - [CREATION DE L'IMAGE](#creation-de-limage)
 - [CREATION DES CONTAINERS](#creation-des-containers)
 - [COPIER FICHIER SQL DANS LE CONTAINER MASTER](#copier-fichier-sql-dans-le-container-master)
@@ -90,7 +93,8 @@ master-port=3306
 replicate-do-db=test
 ```
 
-## SCRIPT SQL
+## SCRIPTS
+### SQL
 Créer un fichier **fixture.sql** dans un dossier **scripts**
 ```sql
 SET NAMES 'utf8';
@@ -109,6 +113,51 @@ VALUES
 ('Adulyadej', 'Bhumibol'),
 ('Poutine', 'Vladimir'),
 ('Zelensky', 'Volodymyr');
+```
+### docker-entrypoint.sh
+```bash
+#!/bin/bash
+
+# Start mysql in background
+mysqld &
+
+# Wait for mysql to be ready
+until mysqladmin ping -h "localhost" --silent; do
+  echo "En attente de MySQL..."
+  sleep 2
+done
+
+# Run sql script
+mysql -uroot -p"$MYSQL_ROOT_PASSWORD" test < /scripts/fixture.sql
+
+# Create replication user
+mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+  CREATE USER 'user_replica'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'user_replica_password';
+  GRANT REPLICATION SLAVE ON *.* TO 'replica'@'%';
+  FLUSH PRIVILEGES;
+"
+
+# Wait for mysql process to complete
+wait
+```
+### wait_for_mysql.sh
+```bash
+#!/bin/bash
+
+########## Check script to ensure MySQL is ready before starting replication on slave host ##########
+
+# host name (container mysql_master) is passed as an argument
+host=$1
+shift
+
+# Loop to check if mysql is ready to receive connections
+until mysql -h "$host" -u root -p"$MYSQL_ROOT_PASSWORD" -e 'show databases'; do
+  echo "Waiting for MySQL at $host to be ready..."
+  sleep 2
+done
+
+# Running command after mysql is ready on master server
+exec "$@"
 ```
 
 ## CREATION DE L'IMAGE
