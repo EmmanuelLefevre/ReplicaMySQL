@@ -19,7 +19,7 @@
 Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0 sur Ubuntu 22.04, avec des scripts personnalisés et des fichiers de configuration spécifiques.
 
 ## CREATION DES FICHIERS DE CONFIGURATION MYSQL
-### Créer un fichier **master.cnf** dans un dossier **configs**
+1. Créer un fichier **master.cnf** dans un dossier **configs**
 ```conf
 [mysqld]
 # Must be different from the slave server.
@@ -38,7 +38,7 @@ binlog-do-db=test
 # Set authentication plugin
 default-authentication-plugin=caching_sha2_password
 ```
-###  Créer un fichier **slave.cnf** dans un dossier **configs**
+2. Créer un fichier **slave.cnf** dans un dossier **configs**
 ```conf
 [mysqld]
 # Must be different from the master server.
