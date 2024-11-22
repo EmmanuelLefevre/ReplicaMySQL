@@ -21,7 +21,7 @@
 - [REINITIALISER TOUTE LA CONFIGURATION](#reinitialiser-toute-la-configuration)
 
 ## INTRODUCTION
-Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0 sur Ubuntu 22.04, avec des scripts personnalisés et des fichiers de configuration spécifiques.
+Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0 sur Ubuntu 22.04. Des scripts personnalisés (contrôle / entrypoint) et des fichiers de configuration spécifiques pour MySQL ont été ajoutés.
 
 ## CREATION DES FICHIERS DE CONFIGURATION MYSQL
 ### Master
