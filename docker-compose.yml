@@ -1,59 +1,54 @@
 version: '3.8'
 
-networks:
-  mysql_network:
-    driver: bridge
-
 services:
   master:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        ROLE: master
-    image: ubuntu_mysql8.0_replica:22.04
-    container_name: mysql_master
+    image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: test
-      MYSQL_USER: replica_master
-      MYSQL_PASSWORD: replica_master_password
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_REPLICATION_MODE: master
+      MYSQL_REPLICATION_USER: replica
+      MYSQL_REPLICATION_PASSWORD: xx
+    volumes:
+      - master_data:/var/lib/mysql
+      - ./configs/master.cnf:/etc/mysql/conf.d/master.cnf
+      - ./scripts/fixture.sql:/scripts/fixture.sql
+      - ./scripts/master_setup.sh:/scripts/master_setup.sh
+      - ./scripts/set_permissions_master_cnf.sh:/scripts/set_permissions_master_cnf.sh
+    command: ["bash", "-c", "/scripts/set_permissions_master_cnf.sh && /scripts/master_setup.sh && mysqld"]
     ports:
       - "3307:3306"
     networks:
       - mysql_network
-    volumes:
-      - ./master_data:/var/lib/mysql
-      - ./scripts/fixture.sql:/scripts/fixture.sql
-      - ./scripts/docker-entrypoint.sh:/scripts/docker-entrypoint.sh
-    entrypoint: ["/bin/bash", "/scripts/docker-entrypoint.sh"]
-    command: ["mysqld", "--user=mysql"]
+    restart: always
 
   slave:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        ROLE: slave
-    image: ubuntu_mysql8.0_replica:22.04
-    container_name: mysql_slave
+    image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: test
-      MYSQL_USER: replica_slave
-      MYSQL_PASSWORD: replica_slave_password
-    entrypoint:
-      - /usr/local/bin/wait_for_mysql.sh
-      - "mysql_master"
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_REPLICATION_MASTER_HOST: master
+      MYSQL_REPLICATION_USER: replica
+      MYSQL_REPLICATION_PASSWORD: xx
     depends_on:
       - master
+    volumes:
+      - slave_data:/var/lib/mysql
+      - ./configs/slave.cnf:/etc/mysql/conf.d/slave.cnf
+      - ./scripts/slave_setup.sh:/scripts/slave_setup.sh
+      - ./scripts/set_permissions_slave_cnf.sh:/scripts/set_permissions_slave_cnf.sh
     ports:
       - "3308:3306"
+    command: ["bash", "-c", "/scripts/set_permissions_slave_cnf.sh && /scripts/slave_setup.sh && mysqld"]
     networks:
       - mysql_network
-    volumes:
-      - ./slave_data:/var/lib/mysql
-    command: ["mysqld", "--user=mysql"]
+    restart: always
+
+networks:
+  mysql_network:
+    driver: bridge
 
 volumes:
   master_data:
