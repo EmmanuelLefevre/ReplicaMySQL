@@ -3,7 +3,7 @@
 server-id=2
 
 # Binary log to record databases changes.
-log-bin=slave_bin
+log-bin=mysql-bin
 # Sets number days before binlog files will automatically deleted.
 binlog_expire_logs_days=99
 # Set maximum size of binlog files before new file will created.
@@ -14,31 +14,18 @@ binlog-do-db=test
 
 # Specify file name in which slave server will store events received from master server.
 relay-log=slave_relay_bin
+relay-log-index=slave_relay_bin.index
 
 # By default, changes applied by slave server aren't recorded in its own binary log (binlog).
 # This could a problem if slave server also has to serve as a master server for other slaves.
-log_replica_updates=1
+log_slave_updates=1
 
 # Prohibit data modification requests.
 # Slave server musn't modify its own data, but only read it and apply changes received from master server.
 read-only=1
 
+master-info-repository=TABLE
+relay-log-info-repository=TABLE
+
 # Set authentication plugin
-default-authentication-plugin=caching_sha2_password
-
-
-########## Parameters for master server connection ##########
-# Set address or hostname of master server.
-master-host=mysql_master
-
-# Set created replica username to connect master server.
-master-user=user_replica
-
-# Set created replica user password to connect master server.
-master-password=user_replica_password
-
-# Set port on which master server listens for replication connections.
-master-port=3306
-
-# Limit replication to the specified database.
-replicate-do-db=test
+default-authentication-plugin=mysql_native_password
