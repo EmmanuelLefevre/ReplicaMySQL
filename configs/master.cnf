@@ -1,19 +1,9 @@
 [mysqld]
-# Must be different from the slave server.
 server-id=1
-
-# Binary log to record changes made to databases.
 log-bin=mysql-bin
-# Sets number days before binlog files will automatically deleted.
 binlog_expire_logs_days=99
-# Set maximum size of binlog files before new file will created.
 max_binlog_size=100M
-
-# Specify the databases whose events should be included in the binary transaction log file.
 binlog-do-db=test
-
-# Pour permettre la réplication avec un user de réplication
 log_slave_updates=1
-
-# Set authentication plugin
+binlog-format=ROW
 default-authentication-plugin=mysql_native_password
