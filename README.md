@@ -24,7 +24,7 @@
 - [REINITIALISER TOUTE LA CONFIGURATION](#reinitialiser-toute-la-configuration)
 
 ## INTRODUCTION
-Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0 sur Ubuntu 22.04. Des scripts personnalisés (contrôle / entrypoint) et des fichiers de configuration spécifiques pour MySQL ont été ajoutés.
+Ce projet configure un environnement Docker multi-conteneurs pour déployer une architecture MySQL Master-Slave en utilisant MySQL 8.0. Des scripts personnalisés (contrôle / entrypoint) et des fichiers de configuration spécifiques pour MySQL ont été ajoutés.
 
 ## CREATION DES FICHIERS DE CONFIGURATION MYSQL
 ### Master
@@ -471,6 +471,13 @@ docker builder prune --all --force
 Remove-Item -Recurse -Force .\master_data, .\slave_data
 Remove-Item .\sauvegarde.sql
 ```
+Accéder à la cli mysql
+```shell
+docker ps
+docker exec -it <nom_du_conteneur> bash
+mysql -u root -p
+```
+
 
 ***
 
