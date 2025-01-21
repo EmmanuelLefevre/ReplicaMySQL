@@ -19,7 +19,7 @@ services:
       - ./scripts/set_permissions_master_cnf.sh:/scripts/set_permissions_master_cnf.sh
     command: ["bash", "-c", "/scripts/set_permissions_master_cnf.sh && /scripts/master_setup.sh && mysqld"]
     ports:
-      - "3306:3306"
+      - "3307:3306"
     networks:
       - mysql_network
 
@@ -34,7 +34,7 @@ services:
       MYSQL_REPLICATION_USER: replica
       MYSQL_REPLICATION_PASSWORD: xx
     ports:
-      - "3307:3306"
+      - "3308:3306"
     depends_on:
       - master
     volumes:
