@@ -2,8 +2,8 @@
 
 # Attendre que MySQL soit complètement démarré
 until mysqladmin ping -h "localhost" --silent; do
-    echo "Waiting for MySQL to be ready..."
-    sleep 5
+  echo "Waiting for MySQL to be ready..."
+  sleep 5
 done
 
 # Attendre un peu plus longtemps pour s'assurer que le master est prêt
