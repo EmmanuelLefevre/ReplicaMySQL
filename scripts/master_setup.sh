@@ -2,8 +2,8 @@
 
 # Wait for mysql to be ready
 until mysqladmin ping -h "localhost" --silent; do
-    echo "Waiting for MySQL to be ready..."
-    sleep 5
+  echo "Waiting for MySQL to be ready..."
+  sleep 5
 done
 
 # Créer l'utilisateur de réplication
