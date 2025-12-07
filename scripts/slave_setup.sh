@@ -26,4 +26,3 @@ mysql -h "$1" -u root -proot_password -e "
   START SLAVE; "
 
 echo "Replication set up successfully."
-echo "test"
